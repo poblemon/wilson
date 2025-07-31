@@ -9,6 +9,8 @@ interface Message {
   timestamp: Date;
 }
 
+const API_KEY = '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';
+
 const ChatAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -21,8 +23,11 @@ const ChatAssistant: React.FC = () => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);rc
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
+  
+const API_KEY = import.meta.env.VITE_OPENROUTER_KEY;
+const APP_URL = import.meta.env.VITE_APP_URL;
 
   useEffect(() => {
     scrollToBottom();
@@ -51,12 +56,12 @@ const ChatAssistant: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer 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',
-          'HTTP-Referer': 'http://localhost:5173',
+          'Authorization': `Bearer ${API_KEY}`,
+          'HTTP-Referer': APP_URL,
           'X-Title': 'WealthWise Financial Education'
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: 'anthropic/claude-3-haiku',
           temperature: 0.3,
           max_tokens: 500,
           messages: [
@@ -103,13 +108,6 @@ const ChatAssistant: React.FC = () => {
       const data = await response.json();
       let botResponse = data.choices?.[0]?.message?.content || "No pude procesar tu pregunta. ¿Podrías reformularla?";
 
-      // Limpiar respuesta para evitar mostrar inputs internos o texto en inglés
-      // Se elimina la heurística que forzaba fallback si no había caracteres acentuados en español
-      // para permitir respuestas sin acentos pero en español
-      // if (!botResponse.match(/[áéíóúñüÁÉÍÓÚÑÜ]/)) {
-      //   botResponse = "Disculpa, no pude generar una respuesta adecuada en español. Por favor, intenta reformular tu pregunta.";
-      // }
-
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: botResponse,
@@ -123,7 +121,7 @@ const ChatAssistant: React.FC = () => {
       console.error('Error:', error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: "Disculpa, estoy teniendo dificultades técnicas. Por favor intenta nuevamente más tarde.",
+        text: "Disculpa, estoy teniendo dificultades técnicas para conectar con el servicio de chat. Por favor intenta nuevamente más tarde o contacta al soporte.",
         sender: 'bot',
         timestamp: new Date()
       };
@@ -133,7 +131,6 @@ const ChatAssistant: React.FC = () => {
     }
   };
 
-  // Resto del componente render (igual que antes)
   return (
     <>
       <motion.button
