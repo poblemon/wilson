@@ -9,7 +9,8 @@ interface Message {
   timestamp: Date;
 }
 
-const API_KEY = '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';
+const API_KEY = import.meta.env.VITE_OPENROUTER_KEY;
+const APP_URL = import.meta.env.VITE_APP_URL;
 
 const ChatAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,9 +26,6 @@ const ChatAssistant: React.FC = () => {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-  
-const API_KEY = import.meta.env.VITE_OPENROUTER_KEY;
-const APP_URL = import.meta.env.VITE_APP_URL;
 
   useEffect(() => {
     scrollToBottom();
