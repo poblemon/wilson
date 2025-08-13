@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-"scripts": {
+  "scripts": {
     "dev": "concurrently \"vite --host --port 3000\" \"node backend/server.cjs\"",
     "build": "vite build",
     "lint": "eslint .",
@@ -26,6 +26,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
+    "@types/node": "^24.2.1",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
@@ -40,5 +41,5 @@
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.3.0",
     "vite": "^6.3.4"
-}
+  }
 }

@@ -1,109 +1,72 @@
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const { Pool } = require('pg');
+const sqlite3 = require('sqlite3').verbose();
 const bodyParser = require('body-parser');
+const path = require('path');
+const os = require('os');
 
 const app = express();
-const PORT = process.env.PORT || 4000;
+const PORT = 4000;
 
-// Configuración de CORS para tus dominios Vercel
-const allowedOrigins = [
-  'https://wilson-6vrg-poblemons-projects.vercel.app',
-  'https://wilson-6vrg-git-main-poblemons-projects.vercel.app',
-  'https://wilson-6vrg-f16wo0hij-poblemons-projects.vercel.app',
-  'http://localhost:3000' // Para desarrollo local
-];
-
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
-}));
-
+// Middleware
+app.use(cors());
 app.use(bodyParser.json());
 
-// Conexión a PostgreSQL (Vercel Postgres)
-const pool = new Pool({
-  connectionString: process.env.POSTGRES_URL,
-  ssl: {
-    rejectUnauthorized: false
+// Initialize SQLite database
+const db = new sqlite3.Database(path.resolve(__dirname, 'newsletter.db'), (err) => {
+  if (err) {
+    console.error('Error opening database:', err.message);
+  } else {
+    console.log('Connected to SQLite database.');
+    db.run("CREATE TABLE IF NOT EXISTS subscribers (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT NOT NULL UNIQUE, interests TEXT, subscribed_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
   }
 });
 
-// Crear tabla si no existe
-(async () => {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS subscribers (
-        id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL UNIQUE,
-        interests TEXT[],
-        subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    console.log('Tabla creada o ya existente');
-  } catch (err) {
-    console.error('Error al crear tabla:', err);
-  }
-})();
-
-// Endpoint para newsletter
-app.post('/api/newsletter', async (req, res) => {
+// API endpoint to receive newsletter subscription
+app.post('/api/newsletter', (req, res) => {
   const { name, email, interests } = req.body;
-
   if (!name || !email) {
     return res.status(400).json({ error: 'Name and email are required.' });
   }
+  const interestsStr = Array.isArray(interests) ? interests.join(',') : '';
 
-  try {
-    const result = await pool.query(
-      `INSERT INTO subscribers (name, email, interests) 
-       VALUES ($1, $2, $3) 
-       RETURNING id`,
-      [name, email, interests || []]
-    );
-
-    res.status(201).json({ 
-      message: 'Subscription successful.', 
-      id: result.rows[0].id 
-    });
-  } catch (err) {
-    if (err.code === '23505') { // Violación de UNIQUE
-      return res.status(409).json({ error: 'Email already subscribed.' });
+  const query = "INSERT INTO subscribers (name, email, interests) VALUES (?, ?, ?)";
+  db.run(query, [name, email, interestsStr], function(err) {
+    if (err) {
+      if (err.message.includes('UNIQUE constraint failed')) {
+        return res.status(409).json({ error: 'Email already subscribed.' });
+      }
+      return res.status(500).json({ error: 'Database error.' });
     }
-    console.error('Database error:', err);
-    res.status(500).json({ error: 'Internal server error.' });
+    res.status(201).json({ message: 'Subscription successful.', id: this.lastID });
+  });
+});
+
+// Servir archivos estáticos para producción
+app.use(express.static(path.resolve(__dirname, '../dist')));
+
+// Ruta catch-all para SPA
+app.get('*', (req, res) => {
+  res.sendFile(path.resolve(__dirname, '../dist/index.html'));
+});
+
+// Obtener IP local para mostrar en consola
+function getLocalIp() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
   }
-});
+  return 'localhost';
+}
 
-// Endpoint de prueba
-app.get('/api/test', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT NOW() as time');
-    res.json({ 
-      message: 'API is working!',
-      databaseTime: result.rows[0].time,
-      environment: process.env.NODE_ENV || 'development'
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Database connection failed' });
-  }
-});
-
-// Manejo de errores
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send('Something broke!');
-});
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Iniciar servidor escuchando en 0.0.0.0
+app.listen(PORT, '0.0.0.0', () => {
+  const localIp = getLocalIp();
+  console.log(`Server running on:`);
+  console.log(`- Local:   http://localhost:${PORT}`);
+  console.log(`- Network: http://${localIp}:${PORT}`);
 });
