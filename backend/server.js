@@ -98,6 +98,62 @@ app.get('/api/test', async (req, res) => {
   }
 });
 
+// Endpoint para chat con IA
+app.post('/api/chat', async (req, res) => {
+  const { messages, userMessage } = req.body;
+
+  if (!userMessage) {
+    return res.status(400).json({ error: 'Message is required' });
+  }
+
+  // Verificar que la API key esté configurada
+  const apiKey = process.env.VITE_OPENROUTER_KEY || process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    console.error('API key no configurada');
+    return res.status(401).json({ error: 'Servicio no configurado correctamente' });
+  }
+
+  try {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': process.env.APP_URL || 'https://your-app.vercel.app',
+        'X-Title': 'WealthWise Financial Education'
+      },
+      body: JSON.stringify({
+        model: 'anthropic/claude-3-haiku',
+        temperature: 0.3,
+        max_tokens: 500,
+        messages: [
+          {
+            role: 'system',
+            content: `Eres Wilson, un asistente financiero experto que responde siempre en español de manera clara, profesional y amable. Nunca respondas en otro idioma ni uses mensajes de error genéricos. Si no sabes la respuesta, responde con "Lo siento, no tengo esa información en este momento."`
+          },
+          ...messages,
+          { role: 'user', content: userMessage }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      console.error('Error de OpenRouter:', response.status, response.statusText);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`OpenRouter error: ${response.status} - ${errorData.error?.message || response.statusText}`);
+    }
+
+    const data = await response.json();
+    const botResponse = data.choices?.[0]?.message?.content || "No pude procesar tu pregunta.";
+
+    res.json({ response: botResponse });
+
+  } catch (error) {
+    console.error('Error en chat:', error);
+    res.status(500).json({ error: 'Error al procesar el mensaje' });
+  }
+});
+
 // Manejo de errores
 app.use((err, req, res, next) => {
   console.error(err.stack);

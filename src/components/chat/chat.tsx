@@ -9,8 +9,7 @@ interface Message {
   timestamp: Date;
 }
 
-const API_KEY = import.meta.env.VITE_OPENROUTER_KEY;
-const APP_URL = window.location.origin;
+// APP_URL ya no se usa, se determina dinámicamente en handleSendMessage
 
 const ChatAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -50,61 +49,33 @@ const ChatAssistant: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      // Determinar la URL del backend según el entorno
+      const isDevelopment = window.location.hostname === 'localhost';
+      const apiUrl = isDevelopment 
+        ? 'http://localhost:3000/api/chat'
+        : `${window.location.origin}/api/chat`;
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_KEY}`,
-          'HTTP-Referer': APP_URL,
-          'X-Title': 'WealthWise Financial Education'
         },
         body: JSON.stringify({
-          model: 'anthropic/claude-3-haiku',
-          temperature: 0.3,
-          max_tokens: 500,
-          messages: [
-            {
-              role: 'system',
-              content: `Eres Wilson, un asistente financiero experto que responde siempre en español de manera clara, profesional y amable. Nunca respondas en otro idioma ni uses mensajes de error genéricos. Si no sabes la respuesta, responde con "Lo siento, no tengo esa información en este momento." Sigue estas reglas:
-
-1. Responde de manera natural y amable a cualquier pregunta inicial.
-2. Si la pregunta no es financiera, después de responder, guía suavemente la conversación hacia temas financieros.
-3. Para preguntas financieras:
-   - Proporciona información precisa y actualizada (Q2 2024)
-   - Usa formato claro con viñetas cuando sea apropiado
-   - Incluye datos concretos (métricas, porcentajes, comparativas)
-   - Mantén un tono profesional pero accesible
-
-4. Responde siempre en español, sin usar otro idioma.
-
-5. Ejemplos de respuestas ideales:
-   P: "Hola, ¿qué puedes hacer?"
-   R: "¡Hola! Soy Wilson, tu experto en finanzas. Puedo ayudarte con análisis de inversiones, mercados, planificación financiera y más. ¿Tienes alguna pregunta específica sobre tus finanzas o el mercado actual?"
-
-   P: "¿Qué sabes de tecnología?"
-   R: "Como asistente financiero, mi especialidad son las finanzas tecnológicas. Por ejemplo, puedo analizar el rendimiento de acciones de empresas tech, tendencias del NASDAQ o valoraciones de startups. ¿Te interesa algún aspecto financiero del sector tecnológico?"
-
-   P: "Análisis de Tesla"
-   R: "**TSLA Q2 2024 - Análisis clave**  
-   - Margen bruto: 18.3% (vs 21.4% sector automotriz)  
-   - Flujo de caja libre: $1.2B (-14% interanual)  
-   - Entrega de vehículos: 450K (+9% trimestral)  
-   - Precio objetivo promedio: $210 (12% potencial)"
-`
-            },
-            ...messages.slice(-6).filter(msg => msg.sender === 'user' || msg.sender === 'bot').map(msg => ({
-              role: msg.sender === 'user' ? 'user' : 'assistant',
-              content: msg.text
-            })),
-            { role: 'user', content: inputText }
-          ]
+          messages: messages.slice(-6).filter(msg => msg.sender === 'user' || msg.sender === 'bot').map(msg => ({
+            role: msg.sender === 'user' ? 'user' : 'assistant',
+            content: msg.text
+          })),
+          userMessage: inputText
         })
       });
 
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
 
       const data = await response.json();
-      let botResponse = data.choices?.[0]?.message?.content || "No pude procesar tu pregunta. ¿Podrías reformularla?";
+      const botResponse = data.response || "No pude procesar tu pregunta. ¿Podrías reformularla?";
 
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -119,7 +90,7 @@ const ChatAssistant: React.FC = () => {
       console.error('Error:', error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: "Disculpa, estoy teniendo dificultades técnicas para conectar con el servicio de chat. Por favor intenta nuevamente más tarde o contacta al soporte.",
+        text: "Disculpa, estoy teniendo dificultades técnicas para conectar con el servicio de chat. Por favor intenta nuevamente más tarde.",
         sender: 'bot',
         timestamp: new Date()
       };
