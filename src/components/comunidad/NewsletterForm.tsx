@@ -48,7 +48,7 @@ const NewsletterForm: React.FC = () => {
     
     if (validateForm()) {
       try {
-        const response = await fetch('http://localhost:4000/api/newsletter', {
+        const response = await fetch('/api/newsletter', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
