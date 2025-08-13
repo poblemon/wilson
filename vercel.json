@@ -9,28 +9,24 @@
       }
     },
     {
-      "src": "api/**/*.js",
+      "src": "newsletter.js",
       "use": "@vercel/node"
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
+      "src": "/api/newsletter",
+      "dest": "newsletter.js",
+      "methods": ["GET", "POST"]
     },
     {
-      "source": "/(.*)",
-      "destination": "/$1"
+      "src": "/(.*)",
+      "dest": "/$1",
+      "continue": true
     }
   ],
-  "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET,POST,PUT,DELETE,OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type,Authorization" }
-      ]
-    }
-  ]
+  "regions": ["iad1"],
+  "env": {
+    "NODE_ENV": "production"
+  }
 }
