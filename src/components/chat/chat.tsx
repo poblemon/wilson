@@ -10,7 +10,7 @@ interface Message {
 }
 
 const API_KEY = import.meta.env.VITE_OPENROUTER_KEY;
-const APP_URL = import.meta.env.VITE_APP_URL;
+const APP_URL = window.location.origin;
 
 const ChatAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
