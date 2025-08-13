@@ -7,26 +7,18 @@
       "config": {
         "distDir": "dist"
       }
-    },
-    {
-      "src": "newsletter.js",
-      "use": "@vercel/node"
     }
   ],
   "routes": [
     {
-      "src": "/api/newsletter",
-      "dest": "newsletter.js",
-      "methods": ["GET", "POST"]
-    },
-    {
       "src": "/(.*)",
-      "dest": "/$1",
-      "continue": true
+      "dest": "/$1"
     }
   ],
-  "regions": ["iad1"],
-  "env": {
-    "NODE_ENV": "production"
-  }
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }
