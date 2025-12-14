@@ -9,7 +9,8 @@ interface Message {
   timestamp: Date;
 }
 
-// APP_URL ya no se usa, se determina dinámicamente en handleSendMessage
+// URL del backend en Render
+const API_URL = import.meta.env.VITE_API_URL || 'https://tu-backend.onrender.com';
 
 const ChatAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -49,19 +50,13 @@ const ChatAssistant: React.FC = () => {
     setLoading(true);
 
     try {
-      // Determinar la URL del backend según el entorno
-      const isDevelopment = window.location.hostname === 'localhost';
-      const apiUrl = isDevelopment 
-        ? 'http://localhost:3000/api/chat'
-        : `${window.location.origin}/api/chat`;
-
-      const response = await fetch(apiUrl, {
+      const response = await fetch(`${API_URL}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: messages.slice(-6).filter(msg => msg.sender === 'user' || msg.sender === 'bot').map(msg => ({
+          messages: messages.slice(-6).map(msg => ({
             role: msg.sender === 'user' ? 'user' : 'assistant',
             content: msg.text
           })),
@@ -70,7 +65,7 @@ const ChatAssistant: React.FC = () => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
@@ -90,7 +85,9 @@ const ChatAssistant: React.FC = () => {
       console.error('Error:', error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: "Disculpa, estoy teniendo dificultades técnicas para conectar con el servicio de chat. Por favor intenta nuevamente más tarde.",
+        text: error instanceof Error && error.message.includes('Failed to fetch')
+          ? "No puedo conectarme al servidor en este momento. Por favor verifica tu conexión e intenta nuevamente."
+          : "Disculpa, estoy teniendo dificultades técnicas. Por favor intenta nuevamente.",
         sender: 'bot',
         timestamp: new Date()
       };
@@ -141,15 +138,15 @@ const ChatAssistant: React.FC = () => {
                   <Bot className="h-12 w-12 mb-4 text-emerald-500" />
                   <h4 className="font-medium text-lg mb-2">Asesoría Financiera Inteligente</h4>
                   <p className="text-sm max-w-xs">
-                    Puedes preguntarme cualquier cosa, pero mi especialidad son las finanzas y inversiones.
+                    Puedo ayudarte con educación financiera, inversiones, y más.
                   </p>
                   <div className="mt-6 text-left text-sm text-gray-600 w-full">
                     <p className="font-medium mb-1">Ejemplos de preguntas:</p>
                     <ul className="list-disc pl-5 space-y-1">
                       <li>"¿Cómo empezar a invertir?"</li>
                       <li>"Explícame qué son los fondos indexados"</li>
-                      <li>"Análisis de las acciones de Apple"</li>
-                      <li>"¿Qué está pasando con el mercado crypto?"</li>
+                      <li>"¿Qué es un presupuesto 50/30/20?"</li>
+                      <li>"Diferencia entre acciones y bonos"</li>
                     </ul>
                   </div>
                 </div>
