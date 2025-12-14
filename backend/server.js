@@ -194,7 +194,7 @@ app.post('/api/chat', async (req, res) => {
         'X-Title': 'WealthWise Financial Education'
       },
       body: JSON.stringify({
-        model: 'anthropic/claude-3-haiku',
+        model: 'nex-agi/deepseek-v3.1-nex-n1:free',
         temperature: 0.3,
         max_tokens: 500,
         messages: [
