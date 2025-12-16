@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface Message {
   id: string;
   text: string;
-  sender: 'user' | 'bot';
+  sender: 'user' | 'bot'; 
   timestamp: Date;
 }
 
