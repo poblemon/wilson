@@ -10,7 +10,7 @@ interface Message {
 }
 
 // URL del backend en Render
-const API_URL = import.meta.env.VITE_API_URL || 'https://tu-backend.onrender.com';
+const API_URL = import.meta.env.VITE_API_URL || 'https://wealthwise-backend-rm71.onrender.com';
 
 const ChatAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
