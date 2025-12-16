@@ -12,6 +12,7 @@ const allowedOrigins = [
   'https://wilson-6vrg-poblemons-projects.vercel.app',
   'https://wilson-6vrg-git-main-poblemons-projects.vercel.app',
   'https://wilson-6vrg-f16wo0hij-poblemons-projects.vercel.app',
+  'https://wilson-6vrg-mj60s4hsf-poblemons-projects.vercel.app', // Nuevo dominio
   'http://localhost:3000',
   'http://localhost:5173' // Vite dev
 ];
@@ -21,7 +22,8 @@ app.use(cors({
     // Permitir requests sin origin (como Postman o apps móviles)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.includes(origin)) {
+    // Permitir todos los subdominios de Vercel
+    if (origin.includes('vercel.app') || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.log('Blocked origin:', origin);
